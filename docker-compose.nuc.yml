@@ -1,0 +1,86 @@
+# Intel NUC Optimized Configuration
+# Optimized for CPU-only inference with memory efficiency
+
+version: '3.8'
+
+services:
+  # Lightweight Jupyter for Intel NUC
+  jupyter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jupyter
+      args:
+        - BASE_IMAGE=python:3.11-slim
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./src:/workspace/src
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+      - ./notebooks:/workspace/notebooks
+      - ./configs:/workspace/configs
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=nuc-llm
+      - OMP_NUM_THREADS=4
+      - MKL_NUM_THREADS=4
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '3.0'
+    networks:
+      - llm-network
+
+  # CPU-Optimized API Server
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+      args:
+        - BASE_IMAGE=python:3.11-slim
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./configs:/app/configs
+    environment:
+      - ENVIRONMENT=production
+      - DEVICE=cpu
+      - MAX_WORKERS=2
+      - BATCH_SIZE=1
+      - MODEL_PRECISION=int8
+      - OMP_NUM_THREADS=4
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+          cpus: '4.0'
+    networks:
+      - llm-network
+    depends_on:
+      - redis
+
+  # Lightweight Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - llm-network
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+networks:
+  llm-network:
+    driver: bridge
+
+volumes:
+  redis_data:

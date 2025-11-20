@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # Development Environment - Jupyter Lab
+  jupyter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./src:/workspace/src
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+      - ./notebooks:/workspace/notebooks
+      - ./configs:/workspace/configs
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=multimodal-llm
+    networks:
+      - llm-network
+    depends_on:
+      - redis
+      - postgres
+
+  # FastAPI Inference Server
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./configs:/app/configs
+    environment:
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:multimodal@postgres:5432/llmdb
+    networks:
+      - llm-network
+    depends_on:
+      - redis
+      - postgres
+      - model-downloader
+
+  # Model Training Service  
+  training:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.training
+    volumes:
+      - ./src:/workspace/src
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+      - ./configs:/workspace/configs
+      - ./scripts:/workspace/scripts
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - WANDB_PROJECT=multimodal-llm
+    networks:
+      - llm-network
+    depends_on:
+      - redis
+      - postgres
+    profiles:
+      - training
+
+  # Model Download Service
+  model-downloader:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.downloader
+    volumes:
+      - ./models:/workspace/models
+      - ./configs:/workspace/configs
+    environment:
+      - HF_HOME=/workspace/models/.cache
+    networks:
+      - llm-network
+    command: python /workspace/scripts/download_models.py
+
+  # Redis for Caching and Queues
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - llm-network
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+  # PostgreSQL for Metadata Storage
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=llmdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=multimodal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - llm-network
+
+  # Monitoring with Grafana
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=multimodal
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - llm-network
+    profiles:
+      - monitoring
+
+networks:
+  llm-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:
+  grafana_data:

@@ -1,0 +1,45 @@
+ARG BASE_IMAGE=pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+FROM ${BASE_IMAGE}
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libgl1-mesa-glx \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /workspace
+
+# Install Python dependencies
+COPY requirements.training.txt .
+RUN pip install --no-cache-dir -r requirements.training.txt
+
+# Install additional training dependencies
+RUN pip install --no-cache-dir \
+    wandb \
+    tensorboard \
+    deepspeed \
+    accelerate
+
+# Create directories
+RUN mkdir -p /workspace/{src,data,models,configs,scripts,checkpoints}
+
+# Copy source code
+COPY src/ /workspace/src/
+COPY configs/ /workspace/configs/
+COPY scripts/ /workspace/scripts/
+
+# Set environment variables
+ENV PYTHONPATH=/workspace
+ENV TRANSFORMERS_CACHE=/workspace/models/.cache
+ENV HF_HOME=/workspace/models/.cache
+ENV WANDB_DIR=/workspace/wandb
+ENV TENSORBOARD_LOG_DIR=/workspace/logs
+
+# Default command (can be overridden)
+CMD ["python", "/workspace/scripts/train.py"]

@@ -1,0 +1,148 @@
+# Gaming Laptop Optimized Configuration
+# Optimized for training and high-performance inference
+
+version: '3.8'
+
+services:
+  # Full-featured Jupyter with GPU support
+  jupyter:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.jupyter
+      args:
+        - BASE_IMAGE=pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./src:/workspace/src
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+      - ./notebooks:/workspace/notebooks
+      - ./configs:/workspace/configs
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=gaming-llm
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        limits:
+          memory: 20G
+          cpus: '12.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - llm-network
+
+  # High-Performance API Server
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+      args:
+        - BASE_IMAGE=pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./configs:/app/configs
+    environment:
+      - ENVIRONMENT=production
+      - DEVICE=cuda
+      - MAX_WORKERS=4
+      - BATCH_SIZE=8
+      - MODEL_PRECISION=fp16
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+          cpus: '8.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - llm-network
+    depends_on:
+      - redis
+      - postgres
+
+  # Training Service for Gaming Laptop
+  training:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.training
+      args:
+        - BASE_IMAGE=pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+    volumes:
+      - ./src:/workspace/src
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+      - ./configs:/workspace/configs
+      - ./scripts:/workspace/scripts
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - WANDB_PROJECT=multimodal-llm
+      - TORCH_CUDNN_V8_API_ENABLED=1
+    deploy:
+      resources:
+        limits:
+          memory: 24G
+          cpus: '14.0'
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - llm-network
+    depends_on:
+      - redis
+      - postgres
+
+  # Enhanced Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - llm-network
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+
+  # PostgreSQL for Training Metadata
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=llmdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=multimodal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - llm-network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+
+networks:
+  llm-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:

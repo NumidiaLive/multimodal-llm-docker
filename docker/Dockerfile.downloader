@@ -1,0 +1,29 @@
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /workspace
+
+# Install Python dependencies
+COPY requirements.downloader.txt .
+RUN pip install --no-cache-dir -r requirements.downloader.txt
+
+# Create directories
+RUN mkdir -p /workspace/{models,configs,scripts}
+
+# Copy scripts
+COPY scripts/download_models.py /workspace/scripts/
+COPY configs/ /workspace/configs/
+
+# Set environment variables
+ENV PYTHONPATH=/workspace
+ENV HF_HOME=/workspace/models/.cache
+
+# Default command
+CMD ["python", "/workspace/scripts/download_models.py"]

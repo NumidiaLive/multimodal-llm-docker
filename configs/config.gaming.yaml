@@ -1,0 +1,91 @@
+# Multimodal LLM Configuration for Gaming Laptop
+
+environment: development
+
+device:
+  auto_detect: true
+  preferred: cuda
+  optimize_for_device: true
+
+text:
+  generation_model: "microsoft/DialoGPT-medium"  # Larger model for gaming laptop
+  classification_model: "microsoft/DialoGPT-medium"
+  max_length: 512
+  temperature: 0.7
+  top_p: 0.9
+  quantization:
+    enabled: false
+    bits: 16
+
+audio:
+  whisper_model: "base"  # Good balance of speed/accuracy
+  sample_rate: 16000
+  language: null
+  enable_classification: true
+
+video:
+  clip_model: "openai/clip-vit-base-patch32"
+  object_detection_model: "facebook/detr-resnet-50"
+  captioning_model: "Salesforce/blip-image-captioning-base"
+  max_frames: 16
+  frame_sampling: "uniform"
+  enable_object_detection: true
+  enable_captioning: true
+
+multimodal:
+  fusion_strategy: "concatenate"
+  max_context_length: 512
+  enable_cross_modal_similarity: true
+  similarity_threshold: 0.7
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  max_request_size: "50MB"
+  cors_origins: ["*"]
+
+training:
+  batch_size: 8
+  learning_rate: 5e-5
+  epochs: 20
+  mixed_precision: true
+  gradient_checkpointing: false
+  dataloader_num_workers: 4
+  deepspeed:
+    enabled: false
+    config_path: "configs/deepspeed.json"
+
+data:
+  cache_dir: "./data/cache"
+  dataset_dir: "./data/datasets"
+  preprocessing:
+    max_text_length: 512
+    max_audio_duration: 60
+    max_video_duration: 120
+
+optimization:
+  model_optimization:
+    quantization: false
+    pruning: false
+    distillation: false
+  inference_optimization:
+    batch_inference: true
+    caching: true
+    async_processing: true
+  memory_optimization:
+    gradient_checkpointing: false
+    cpu_offload: false
+    model_sharding: false
+
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  health_check_interval: 30
+  log_system_metrics: true
+
+logging:
+  level: "DEBUG"
+  file: "logs/multimodal_llm.log"
+  max_file_size: "10MB"
+  backup_count: 5

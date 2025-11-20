@@ -1,0 +1,64 @@
+# Multimodal LLM Configuration for Intel NUC
+
+environment: production
+
+device:
+  auto_detect: true
+  preferred: cpu
+  optimize_for_device: true
+
+text:
+  generation_model: "distilgpt2"  # Smaller model for NUC
+  classification_model: "distilgpt2"
+  max_length: 256
+  temperature: 0.7
+  top_p: 0.9
+  quantization:
+    enabled: true
+    bits: 8
+    cpu_offload: true
+
+audio:
+  whisper_model: "tiny"  # Smallest Whisper model
+  sample_rate: 16000
+  language: null
+  enable_classification: false  # Disable to save memory
+
+video:
+  clip_model: "openai/clip-vit-base-patch32"
+  max_frames: 8  # Reduce for memory efficiency
+  frame_sampling: "uniform"
+  enable_object_detection: false  # Disable for NUC
+  enable_captioning: false  # Disable for NUC
+
+multimodal:
+  fusion_strategy: "concatenate"
+  max_context_length: 256
+  enable_cross_modal_similarity: false
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+  max_request_size: "5MB"
+
+training:
+  batch_size: 1
+  learning_rate: 1e-5
+  mixed_precision: false
+  gradient_checkpointing: true
+  dataloader_num_workers: 1
+
+optimization:
+  model_optimization:
+    quantization: true
+    pruning: false
+  inference_optimization:
+    batch_inference: false
+    caching: true
+  memory_optimization:
+    gradient_checkpointing: true
+    cpu_offload: true
+
+logging:
+  level: "INFO"
