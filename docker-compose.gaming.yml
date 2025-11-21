@@ -23,10 +23,11 @@ services:
       - JUPYTER_ENABLE_LAB=yes
       - JUPYTER_TOKEN=gaming-llm
       - CUDA_VISIBLE_DEVICES=0
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
     deploy:
       resources:
         limits:
-          memory: 20G
+          memory: 16G  # Reduced for RTX 2060
           cpus: '12.0'
         reservations:
           devices:
@@ -53,12 +54,13 @@ services:
       - ENVIRONMENT=production
       - DEVICE=cuda
       - MAX_WORKERS=4
-      - BATCH_SIZE=8
+      - BATCH_SIZE=4  # Reduced for RTX 2060
       - MODEL_PRECISION=fp16
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
     deploy:
       resources:
         limits:
-          memory: 16G
+          memory: 12G  # Reduced for RTX 2060
           cpus: '8.0'
         reservations:
           devices:
@@ -88,10 +90,11 @@ services:
       - CUDA_VISIBLE_DEVICES=0
       - WANDB_PROJECT=multimodal-llm
       - TORCH_CUDNN_V8_API_ENABLED=1
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
     deploy:
       resources:
         limits:
-          memory: 24G
+          memory: 20G  # Reduced for RTX 2060
           cpus: '14.0'
         reservations:
           devices:

@@ -1,7 +1,12 @@
 ARG BASE_IMAGE=pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
 FROM ${BASE_IMAGE}
 
+# Set timezone to Australia/Perth
+ENV TZ=Australia/Perth
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Install system dependencies
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     build-essential \
     ffmpeg \
@@ -22,9 +27,11 @@ WORKDIR /workspace
 COPY requirements.jupyter.txt .
 RUN pip install --no-cache-dir -r requirements.jupyter.txt
 
-# Install Jupyter Lab extensions
-RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
-RUN jupyter labextension install plotlywidget
+# Install Jupyter Lab extensions via pip (modern method)
+RUN pip install --no-cache-dir \
+    jupyterlab-widgets \
+    ipywidgets \
+    ipympl
 
 # Create directories
 RUN mkdir -p /workspace/{src,data,models,notebooks,configs}
@@ -38,14 +45,17 @@ COPY notebooks/ /workspace/notebooks/
 ENV PYTHONPATH=/workspace
 ENV JUPYTER_CONFIG_DIR=/workspace/.jupyter
 
-# Create Jupyter config
-RUN jupyter lab --generate-config
-RUN echo "c.ServerApp.ip = '0.0.0.0'" >> /root/.jupyter/jupyter_lab_config.py
-RUN echo "c.ServerApp.allow_root = True" >> /root/.jupyter/jupyter_lab_config.py
-RUN echo "c.ServerApp.open_browser = False" >> /root/.jupyter/jupyter_lab_config.py
+# Create Jupyter config directory and generate config
+RUN mkdir -p /root/.jupyter && \
+    jupyter lab --generate-config && \
+    echo "c.ServerApp.ip = '0.0.0.0'" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.allow_root = True" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.open_browser = False" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.token = 'gaming-llm'" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.password = ''" >> /root/.jupyter/jupyter_lab_config.py
 
 # Expose port
 EXPOSE 8888
 
 # Start Jupyter Lab
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=multimodal-llm"]
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]

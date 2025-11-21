@@ -15,7 +15,7 @@ datasets>=2.15.0
 # Audio Processing
 librosa>=0.10.0
 soundfile>=0.12.0
-whisper-openai>=20231117
+openai-whisper>=20231117
 
 # Video Processing  
 opencv-python>=4.8.0

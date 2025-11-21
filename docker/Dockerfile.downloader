@@ -1,6 +1,11 @@
 FROM python:3.11-slim
 
+# Set timezone to Australia/Perth
+ENV TZ=Australia/Perth
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Install system dependencies
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     git \
     wget \

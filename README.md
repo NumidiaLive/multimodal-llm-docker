@@ -22,12 +22,35 @@ multimodal-llm/
 
 ## 🚀 Quick Start
 
+### Gaming Laptop Setup (RTX 2060)
+**NEW**: If you're using a gaming laptop with NVIDIA GPU, see:
+- 📘 [**Gaming Laptop Setup Guide**](GAMING-LAPTOP-SETUP.md) - Complete setup instructions
+- 📋 [**Installation Summary**](INSTALLATION-SUMMARY.md) - What's been installed
+- ⚡ [**Quick Reference**](QUICK-REFERENCE.md) - Essential commands
+
+**Quick Setup:**
+```powershell
+# 1. Run automated setup
+.\setup-gaming.ps1
+
+# 2. Start services with GPU support
+docker-compose -f docker-compose.gaming.yml up -d
+
+# 3. Access Jupyter Lab
+# http://localhost:8888 (token: gaming-llm)
+
+# 4. Monitor GPU
+nvidia-smi -l 1
+```
+
 ### Prerequisites
 - Docker and Docker Compose
 - NVIDIA Docker (for GPU support)
+- Python 3.11+
 - At least 16GB RAM (32GB recommended)
+- Windows: WSL2 enabled
 
-### Launch Development Environment
+### General Launch (Any Platform)
 ```bash
 # Clone and setup
 git clone <your-repo>

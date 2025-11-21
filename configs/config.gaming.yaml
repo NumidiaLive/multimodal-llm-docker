@@ -8,17 +8,17 @@ device:
   optimize_for_device: true
 
 text:
-  generation_model: "microsoft/DialoGPT-medium"  # Larger model for gaming laptop
-  classification_model: "microsoft/DialoGPT-medium"
+  generation_model: "distilgpt2"  # Optimized for RTX 2060 6GB VRAM
+  classification_model: "distilbert-base-uncased"
   max_length: 512
   temperature: 0.7
   top_p: 0.9
   quantization:
-    enabled: false
+    enabled: false  # RTX 2060 has good FP16 support
     bits: 16
 
 audio:
-  whisper_model: "base"  # Good balance of speed/accuracy
+  whisper_model: "base"  # Good balance for RTX 2060
   sample_rate: 16000
   language: null
   enable_classification: true
@@ -27,7 +27,7 @@ video:
   clip_model: "openai/clip-vit-base-patch32"
   object_detection_model: "facebook/detr-resnet-50"
   captioning_model: "Salesforce/blip-image-captioning-base"
-  max_frames: 16
+  max_frames: 12  # Reduced for 6GB VRAM
   frame_sampling: "uniform"
   enable_object_detection: true
   enable_captioning: true
@@ -46,11 +46,11 @@ api:
   cors_origins: ["*"]
 
 training:
-  batch_size: 8
+  batch_size: 4  # Reduced for RTX 2060 6GB VRAM
   learning_rate: 5e-5
   epochs: 20
-  mixed_precision: true
-  gradient_checkpointing: false
+  mixed_precision: true  # Use FP16 for better performance
+  gradient_checkpointing: true  # Save memory
   dataloader_num_workers: 4
   deepspeed:
     enabled: false
